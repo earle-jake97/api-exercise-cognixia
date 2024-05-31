@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recipe API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        .form-container {
+            margin-top: 20px;
+        }
+        .form-container form {
+            display: none;
+        }
+        .form-container form.active {
+            display: block;
+        }
+        .form-container input, .form-container button {
+            display: block;
+            margin: 10px 0;
+        }
+        .recipe {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-top: 10px;
+        }
+        .recipe img {
+            max-width: 200px;
+            display: block;
+        }
+        .error {
+            color: red;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Recipe API</h1>
+
+<select id="action-select">
+    <option value="">Select an action</option>
+    <option value="get-all">Get all recipes</option>
+    <option value="get-by-id">Get recipe by ID</option>
+    <option value="add-new">Add new recipe</option>
+    <option value="delete-by-id">Delete recipe by ID</option>
+    <option value="update-by-id">Update recipe by ID</option>
+</select>
+
+<div class="form-container">
+    <form id="get-all-form" class="form">
+        <button type="button" onclick="getAllRecipes()">Get all recipes</button>
+    </form>
+    <form id="get-by-id-form" class="form">
+        <label for="get-id">Recipe ID:</label>
+        <input type="number" id="get-id" name="id">
+        <button type="button" onclick="getRecipeById()">Get recipe</button>
+    </form>
+    <form id="add-new-form" class="form">
+        <label for="name">Name:</label>
+        <input type="text" id="name" name="name">
+        <label for="calories">Calories:</label>
+        <input type="number" id="calories" name="calories">
+        <label for="prep-time">Prep Time:</label>
+        <input type="text" id="prep-time" name="prepTime">
+        <label for="img-url">Image URL:</label>
+        <input type="text" id="img-url" name="imgUrl">
+        <button type="button" onclick="addNewRecipe()">Add recipe</button>
+    </form>
+    <form id="delete-by-id-form" class="form">
+        <label for="delete-id">Recipe ID:</label>
+        <input type="number" id="delete-id" name="id">
+        <button type="button" onclick="deleteRecipeById()">Delete recipe</button>
+    </form>
+    <form id="update-by-id-form" class="form">
+        <label for="update-id">Recipe ID:</label>
+        <input type="number" id="update-id" name="id">
+        <label for="update-name">Name (optional):</label>
+        <input type="text" id="update-name" name="name">
+        <label for="update-calories">Calories (optional):</label>
+        <input type="number" id="update-calories" name="calories">
+        <label for="update-prep-time">Prep Time (optional):</label>
+        <input type="text" id="update-prep-time" name="prepTime">
+        <label for="update-img-url">Image URL (optional):</label>
+        <input type="text" id="update-img-url" name="imgUrl">
+        <button type="button" onclick="updateRecipeById()">Update recipe</button>
+    </form>
+</div>
+
+<div id="result"></div>
+<div id="error" class="error"></div>
+
+<script>
+    document.getElementById('action-select').addEventListener('change', function() {
+        document.querySelectorAll('.form').forEach(form => form.classList.remove('active'));
+        const selectedForm = document.getElementById(this.value + '-form');
+        if (selectedForm) {
+            selectedForm.classList.add('active');
+        }
+        document.getElementById('result').innerHTML = '';
+        document.getElementById('error').innerHTML = '';
+    });
+
+    async function getAllRecipes() {
+        try {
+            const response = await fetch('/api/recipes');
+            const data = await handleResponse(response);
+            displayRecipes(data);
+        } catch (error) {
+            displayError(error);
+        }
+    }
+
+    async function getRecipeById() {
+        const id = document.getElementById('get-id').value;
+        try {
+            const response = await fetch(`/api/recipes/${id}`);
+            const data = await handleResponse(response);
+            displayRecipes(data);
+        } catch (error) {
+            displayError(error);
+        }
+    }
+
+    async function addNewRecipe() {
+        const name = document.getElementById('name').value;
+        const calories = document.getElementById('calories').value;
+        const prepTime = document.getElementById('prep-time').value;
+        const imgUrl = document.getElementById('img-url').value;
+
+        try {
+            const response = await fetch('/api/recipes', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ name, calories, prepTime, imgUrl })
+            });
+            const data = await handleResponse(response);
+            displayRecipes(data);
+        } catch (error) {
+            displayError(error);
+        }
+    }
+
+    async function deleteRecipeById() {
+        const id = document.getElementById('delete-id').value;
+        try {
+            const response = await fetch(`/api/recipes/${id}`, {
+                method: 'DELETE'
+            });
+            const data = await handleResponse(response);
+            displayRecipes(data);
+        } catch (error) {
+            displayError(error);
+        }
+    }
+
+    async function updateRecipeById() {
+        const id = document.getElementById('update-id').value;
+        const name = document.getElementById('update-name').value;
+        const calories = document.getElementById('update-calories').value;
+        const prepTime = document.getElementById('update-prep-time').value;
+        const imgUrl = document.getElementById('update-img-url').value;
+
+        const updateData = {};
+        if (name) updateData.name = name;
+        if (calories) updateData.calories = calories;
+        if (prepTime) updateData.prepTime = prepTime;
+        if (imgUrl) updateData.imgUrl = imgUrl;
+
+        try {
+            const response = await fetch(`/api/recipes/${id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updateData)
+            });
+            const data = await handleResponse(response);
+            displayRecipes(data);
+        } catch (error) {
+            displayError(error);
+        }
+    }
+
+    async function handleResponse(response) {
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(`${response.status}: ${error}`);
+        }
+        return response.json();
+    }
+
+    function displayRecipes(recipes) {
+        const resultDiv = document.getElementById('result');
+        resultDiv.innerHTML = '';
+        document.getElementById('error').innerHTML = '';
+        recipes.forEach(recipe => {
+            const recipeDiv = document.createElement('div');
+            recipeDiv.classList.add('recipe');
+            recipeDiv.innerHTML = `
+                <h3>${recipe.name}</h3>
+                <p>Calories: ${recipe.calories}</p>
+                <p>Prep time: ${recipe.prepTime}</p>
+                <img src="${recipe.imgUrl}" alt="${recipe.name}">
+            `;
+            resultDiv.appendChild(recipeDiv);
+        });
+    }
+
+    function displayError(error) {
+        const errorDiv = document.getElementById('error');
+        errorDiv.innerText = error.message;
+    }
+</script>
+
+</body>
+</html>
